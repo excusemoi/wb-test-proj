@@ -1,16 +1,58 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 )
 
-func main() {
+var urls = []string{
+"http://webcode.me",
+"https://example.com",
+"http://httpbin.org",
+"https://www.perl.org",
+"https://www.php.net",
+"https://www.python.org",
+"https://code.visualstudio.com",
+"https://clojure.org",
+}
 
+
+func main() {
+}
+
+func post(u string) {
+	data := url.Values{
+		"name":			{"123"},
+		"occupation":   {"456"},
+	}
+	resp, err := http.PostForm(u, data)
+	if err != nil {
+		log.Fatalf("Can't post\n")
+	}
+	var res map[string]interface{}
+	json.NewDecoder(resp.Body).Decode(&res)
+	fmt.Println(res["form"])
+
+}
+
+func getReqAsync(urls []string) {
+	var wg sync.WaitGroup
+	for _, url := range urls{
+		wg.Add(1)
+		go func(url string) {
+			defer wg.Done()
+			getReq(url)
+		}(url)
+	}
+	wg.Wait()
 }
 
 func getReq(url string) {
