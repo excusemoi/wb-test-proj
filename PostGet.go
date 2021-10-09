@@ -24,10 +24,6 @@ var urls = []string{
 "https://clojure.org",
 }
 
-
-func main() {
-}
-
 func post(u string) {
 	data := url.Values{
 		"name":			{"123"},

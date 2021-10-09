@@ -1,38 +1,44 @@
 package main
 
 import (
-	"bufio"
-	"net"
+	"database/sql"
+	"fmt"
+	_ "github.com/lib/pq"
+	"github.com/nats-io/nats.go"
 )
 
-func serverLogic() {
-	listener, _ := net.Listen("tcp", ":5000")
 
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			println("Cant connect")
-			conn.Close()
-			continue
-		}
-		println("Connected")
-
-		bufReader := bufio.NewReader(conn)
-		println("Start reading")
-
-		go func(conn net.Conn) {
-			defer conn.Close()
-			for {
-				rb, err_ := bufReader.ReadByte()
-				if err_ != nil {
-					println("Cant read byte")
-					break
-				}
-				print(string(rb))
-				conn.Write([]byte("\nReceived"))
-			}
-		}(conn)
-
+func main() {
+	var (
+		port 		= 5432
+		hostName 	= "localhost"
+		originStr	= fmt.Sprintf("http://localhost:%d", port)
+		user 		= "postgres"
+		password 	= "postgres"
+		dbName		= "testDb"
+		dbInfo 		= fmt.Sprintf("host=%s port=%d user=%s "+
+						"password=%s dbname=%s sslmode=disable",
+						hostName, port, user, password, dbName)
+		dbURL 		= fmt.Sprintf("postgres://%s:%s@%s:%d/testDb", user, hostName, password, port )
+		natsURL 	= nats.DefaultURL
+	)
+	fmt.Printf("Data:\n\t%s\n\t%s\n\t%s\n\t%s", originStr, dbURL, natsURL, dbInfo)
+	fmt.Println("Trying to connect to db...")
+	db, err := sql.Open("postgres", dbInfo)
+	err = db.Ping()
+	if err != nil {
+		panic(err)
 	}
+	defer db.Close()
 
+	/*sqlStatement := `
+	INSERT INTO TestTable (test)
+	VALUES ('123')`
+	_, err = db.Exec(sqlStatement)
+	if err != nil {
+		panic(err)
+	}*/
+
+	fmt.Println("Nichuya ne slomalos")
 }
+
