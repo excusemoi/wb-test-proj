@@ -1,7 +1,6 @@
 package items
 
 import (
-	"../resources"
 	"errors"
 	"math/rand"
 	"time"
@@ -20,7 +19,7 @@ func TryGetCreator(productName string, creators map[string]ICreator) (ICreator, 
 }
 
 type ICreator interface {
-	Create() (data.IData)
+	Create() (IData)
 }
 
 type OrderCreator struct {
@@ -32,12 +31,12 @@ type ItemCreator struct {
 type PaymentCreator struct {
 }
 
-func (ic ItemCreator) Create() data.IData {
+func (ic ItemCreator) Create() IData {
 	rand.Seed(time.Now().UnixNano())
 	var price = randInt(minPrice, maxPrice + 1)
 	var sale = rand.Intn(minPrice)
 	var totalPrice = price - sale
-	return data.Item{
+	return Item{
 		ChrtID:     rand.Intn(100),
 		Price:      price,
 		Rid:        randomString(5),
@@ -50,9 +49,9 @@ func (ic ItemCreator) Create() data.IData {
 	}
 }
 
-func (pc PaymentCreator) Create() data.IData {
+func (pc PaymentCreator) Create() IData {
 	rand.Seed(time.Now().UnixNano())
-	return data.Payment{
+	return Payment{
 		Transaction:  transactions[rand.Intn(len(transactions))],
 		Currency:     currencys[rand.Intn(len(currencys))],
 		Provider:     providers[rand.Intn(len(providers))],
