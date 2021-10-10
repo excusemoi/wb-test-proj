@@ -1,14 +1,16 @@
 package main
 
 import (
-	"database/sql"
 	"flag"
 	"fmt"
+	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
+	_ "github.com/lib/pq"
 	"github.com/nats-io/nats.go"
+	"goProj/dataFactory"
 	"log"
 	"runtime"
 	"time"
-	"../items"
 )
 
 func main() {
@@ -65,10 +67,8 @@ func main() {
 
 	subj := args[0]
 
-	nc.Subscribe(subj, func(msg *nats.Msg) {
-		fmt.Printf("Item: %s Uid: %s\n", msg.Subject, msg.Data)
+	nc.Subscribe(subj, handleMessage)
 
-	})
 	nc.Flush()
 
 	if err = nc.LastError(); err != nil {
@@ -87,32 +87,49 @@ func handleMessage(msg *nats.Msg){
 	var (
 		port 		= 5432
 		hostName 	= "localhost"
-		originStr	= fmt.Sprintf("http://localhost:%d", port)
+		//originStr	= fmt.Sprintf("http://localhost:%d", port)
 		user 		= "postgres"
 		password 	= "postgres"
 		dbName		= "testDb"
 		dbInfo 		= fmt.Sprintf("host=%s port=%d user=%s "+
 			"password=%s dbname=%s sslmode=disable",
 			hostName, port, user, password, dbName)
-		dbURL 		= fmt.Sprintf("postgres://%s:%s@%s:%d/testDb", user, hostName, password, port )
-		natsURL 	= nats.DefaultURL
+		//dbURL 		= fmt.Sprintf("postgres://%s:%s@%s:%d/testDb", user, hostName, password, port )
+		//natsURL 	= nats.DefaultURL
 	)
-	fmt.Printf("Data:\n\t%s\n\t%s\n\t%s\n\t%s", originStr, dbURL, natsURL, dbInfo)
-	fmt.Println("Trying to connect to db...")
-	db, err := sql.Open("postgres", dbInfo)
+	db, err := sqlx.Open("postgres", dbInfo)
 	err = db.Ping()
 	if err != nil {
 		panic(err)
 	}
 	defer db.Close()
 
-	var typeOfItem, uId = msg.Subject, msg.Data
-	fmt.Printf("Trying to add %s %s\n", typeOfItem, uId)
-	cr, err := items.TryGetCreator(typeOfItem, items.Creators)
+	cr, err := dataFactory.TryGetCreator(msg.Subject, dataFactory.Creators)
+	it := cr.Create()
 	if err != nil {
 		log.Fatal("Unknown item")
 	}
-	db.Exec("insert into $1 values($2)", typeOfItem, cr.Create())
+	if (msg.Subject != "order") {
+		_, err = db.NamedExec(cr.CreateQuery(),it)
+	} else {
+		_, err = db.Exec(`insert into "Order" (orderuid, entry, internalsignature, payment, items, locale,
+                     			 customerid, tracknumber,deliveryservice, shardkey, smid) 
+								 values($1, $2, $3, $4, $5, $6, $7, $8,$9, $10, $11)`,
+			it.(dataFactory.Order).OrderUID,
+			it.(dataFactory.Order).Entry,
+			it.(dataFactory.Order).InternalSignature,
+			it.(dataFactory.Order).Payment,
+			pq.Array(it.(dataFactory.Order).Items),
+			it.(dataFactory.Order).Locale,
+			it.(dataFactory.Order).CustomerID,
+			it.(dataFactory.Order).TrackNumber,
+			it.(dataFactory.Order).DeliveryService,
+			it.(dataFactory.Order).Shardkey,
+			it.(dataFactory.Order).SmID,)
+	}
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 func setupConnOptions(opts []nats.Option) []nats.Option {

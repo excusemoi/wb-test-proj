@@ -1,4 +1,4 @@
-package items
+package dataFactory
 
 import "math/rand"
 
