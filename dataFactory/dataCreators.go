@@ -20,8 +20,7 @@ func TryGetCreator(productName string, creators map[string]ICreator) (ICreator, 
 }
 
 type ICreator interface {
-	Create() (IData)
-	CreateQuery() (string)
+	Create(id int) (IData)
 }
 
 type OrderCreator struct {
@@ -33,13 +32,13 @@ type ItemCreator struct {
 type PaymentCreator struct {
 }
 
-func (ic ItemCreator) Create() IData {
+func (ic ItemCreator) Create(id int) IData {
 	rand.Seed(time.Now().UnixNano())
 	var price = randInt(minPrice, maxPrice + 1)
 	var sale = rand.Intn(minPrice)
 	var totalPrice = price - sale
 	return Item{
-		ChrtID:     rand.Intn(100),
+		ChrtID:     randomString(5),
 		Price:      price,
 		Rid:        randomString(5),
 		Name:       items[rand.Intn(len(items))],
@@ -48,10 +47,11 @@ func (ic ItemCreator) Create() IData {
 		TotalPrice: totalPrice,
 		NmID:       rand.Intn(5),
 		Brand:      brands[rand.Intn(len(brands))],
+		ItemID: id,
 	}
 }
 
-func (pc PaymentCreator) Create() IData {
+func (pc PaymentCreator) Create(id int) IData {
 	rand.Seed(time.Now().UnixNano())
 	return Payment{
 		Transaction:  transactions[rand.Intn(len(transactions))],
@@ -62,10 +62,11 @@ func (pc PaymentCreator) Create() IData {
 		Bank:         banks[rand.Intn(len(banks))],
 		DeliveryCost: randInt(minPrice, maxPrice),
 		GoodsTotal:   randInt(0,10),
+		PaymentID: id,
 	}
 }
 
-func (oc OrderCreator) Create() (IData) {
+func (oc OrderCreator) Create(id int) (IData) {
 	rand.Seed(time.Now().UnixNano())
 	pc := PaymentCreator{}
 	ic := ItemCreator{}
@@ -74,7 +75,7 @@ func (oc OrderCreator) Create() (IData) {
 		OrderUID:          randomString(5),
 		Entry:             randomString(5),
 		InternalSignature: randomString(5),
-		Payment:           pc.Create().(Payment),
+		Payment:           pc.Create(id).(Payment),
 		Items:             []Item{},
 		Locale:            randomString(5),
 		CustomerID:        randomString(5),
@@ -82,20 +83,14 @@ func (oc OrderCreator) Create() (IData) {
 		DeliveryService:   deliveryServices[rand.Intn(len(deliveryServices))],
 		Shardkey:          randomString(5),
 		SmID:              rand.Intn(5),
+		PaymentID: id,
 	}
 	itemsAmount := rand.Intn(5)
 	for i := 0; i < itemsAmount; i++ {
-		o.Items = append(o.Items, ic.Create().(Item))
+		o.Items = append(o.Items, ic.Create(id).(Item))
 	}
 	o.Payment.Amount = itemsAmount
 	return o
-}
-
-func (pc OrderCreator) CreateQuery() string {
-	return `insert into "Order" (orderuid, entry, internalsignature, payment, dataFactory, locale, customerid, tracknumber,
-			deliveryservice, shardkey, smid) 
-			values(:orderuid, :entry, :internalsignature, :payment, :dataFactory, :locale, :customerid, :tracknumber,
-			:deliveryservice, :shardkey, :smid)`
 }
 
 const minPrice = 20

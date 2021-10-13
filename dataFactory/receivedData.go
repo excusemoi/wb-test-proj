@@ -18,7 +18,6 @@ type IData interface {
 }
 
 type Order struct {
-	IData
 	OrderUID string `json:"order_uid" db:"orderuid"`
 	Entry string `json:"entry" db:"entry"`
 	InternalSignature string `json:"internal_signature" db:"internalsignature"`
@@ -30,7 +29,11 @@ type Order struct {
 	DeliveryService string `json:"delivery_service" db:"deliveryservice"`
 	Shardkey string `json:"shardkey" db:"shardkey"`
 	SmID int `json:"sm_id" db:"smid"`
+	PaymentID int `json:"Payment_id" db:"PaymentID"`
+	IData
 }
+
+
 
 type Payment struct {
 	IData
@@ -43,6 +46,7 @@ type Payment struct {
 	Bank string `json:"bank" db:"bank"`
 	DeliveryCost int `json:"delivery_cost" db:"deliverycost"`
 	GoodsTotal int `json:"goods_total" db:"goodstotal"`
+	PaymentID int `db:"PaymentID"`
 }
 func (p Payment) Value() (driver.Value, error) {
 	return fmt.Sprintf("(%s, %s, %s, %d, %d, %s, %d, %d)",
@@ -59,7 +63,7 @@ func (p Payment) Value() (driver.Value, error) {
 type Item struct {
 	IData
 	driver.Valuer
-	ChrtID int `json:"chrt_id" db:"chrtid"`
+	ChrtID string `json:"chrt_id" db:"chrtid"`
 	Price int `json:"price" db:"price"`
 	Rid string `json:"rid" db:"rid"`
 	Name string `json:"name" db:"name"`
@@ -68,6 +72,7 @@ type Item struct {
 	TotalPrice int `json:"total_price" db:"totalprice"`
 	NmID int `json:"nm_id" db:"nmid"`
 	Brand string `json:"brand" db:"brand"`
+	ItemID int `db:"ItemID"`
 }
 
 func (i Item) Value() (driver.Value, error) {

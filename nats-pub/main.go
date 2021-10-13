@@ -57,9 +57,9 @@ func main() {
 	}
 	defer nc.Close()
 
-	subj, uid := args[0], []byte(args[1])
+	subj, message := args[0], []byte(args[1])
 
-	nc.Publish(subj, uid)
+	nc.Publish(subj, message)
 
 	nc.Flush()
 

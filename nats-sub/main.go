@@ -4,11 +4,11 @@ import (
 	"flag"
 	"fmt"
 	"github.com/jmoiron/sqlx"
-	"github.com/lib/pq"
 	_ "github.com/lib/pq"
 	"github.com/nats-io/nats.go"
 	"goProj/dataFactory"
 	"log"
+	"math/rand"
 	"runtime"
 	"time"
 )
@@ -87,16 +87,14 @@ func handleMessage(msg *nats.Msg){
 	var (
 		port 		= 5432
 		hostName 	= "localhost"
-		//originStr	= fmt.Sprintf("http://localhost:%d", port)
 		user 		= "postgres"
 		password 	= "postgres"
 		dbName		= "testDb"
 		dbInfo 		= fmt.Sprintf("host=%s port=%d user=%s "+
 			"password=%s dbname=%s sslmode=disable",
 			hostName, port, user, password, dbName)
-		//dbURL 		= fmt.Sprintf("postgres://%s:%s@%s:%d/testDb", user, hostName, password, port )
-		//natsURL 	= nats.DefaultURL
 	)
+
 	db, err := sqlx.Open("postgres", dbInfo)
 	err = db.Ping()
 	if err != nil {
@@ -104,31 +102,37 @@ func handleMessage(msg *nats.Msg){
 	}
 	defer db.Close()
 
+	id := rand.Intn(10000)
 	cr, err := dataFactory.TryGetCreator(msg.Subject, dataFactory.Creators)
-	it := cr.Create()
+	it := cr.Create(id)
 	if err != nil {
 		log.Fatal("Unknown item")
 	}
-	if (msg.Subject != "order") {
-		_, err = db.NamedExec(cr.CreateQuery(),it)
-	} else {
-		_, err = db.Exec(`insert into "Order" (orderuid, entry, internalsignature, payment, items, locale,
-                     			 customerid, tracknumber,deliveryservice, shardkey, smid) 
-								 values($1, $2, $3, $4, $5, $6, $7, $8,$9, $10, $11)`,
+	switch msg.Subject {
+	case "order":
+		db.NamedExec(dataFactory.PaymentQuery, it.(dataFactory.Order).Payment)
+		_, err = db.Exec(`insert into "Order" (orderuid, entry, internalsignature, locale,
+                     			 customerid, tracknumber,deliveryservice, shardkey, smid, paymentid) 
+								 values($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
 			it.(dataFactory.Order).OrderUID,
 			it.(dataFactory.Order).Entry,
 			it.(dataFactory.Order).InternalSignature,
-			it.(dataFactory.Order).Payment,
-			pq.Array(it.(dataFactory.Order).Items),
 			it.(dataFactory.Order).Locale,
 			it.(dataFactory.Order).CustomerID,
 			it.(dataFactory.Order).TrackNumber,
 			it.(dataFactory.Order).DeliveryService,
 			it.(dataFactory.Order).Shardkey,
-			it.(dataFactory.Order).SmID,)
-	}
-	if err != nil {
-		fmt.Println(err)
+			it.(dataFactory.Order).SmID,
+			it.(dataFactory.Order).PaymentID)
+
+		for _, item := range it.(dataFactory.Order).Items {
+			item.ChrtID = it.(dataFactory.Order).OrderUID
+			_, err = db.NamedExec(dataFactory.ItemQuery, item)
+		}
+	case "payment":
+		_,err = db.NamedExec(dataFactory.PaymentQuery, it)
+	default:
+		fmt.Println("Can't add object to db")
 	}
 }
 
