@@ -21,7 +21,7 @@ func serveFiles(writer http.ResponseWriter, request *http.Request) {
 		path := request.URL.Path
 		fmt.Println(path)
 		if path == "/" {
-			path = "./static/main.html"
+			path = "../web/static/main.html"
 		} else {
 			path = "." + path
 		}
