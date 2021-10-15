@@ -1,26 +1,12 @@
 package dataFactory
 
 import (
-	"errors"
 	"math/rand"
 	"time"
 )
 
-var Creators = map[string]ICreator{
-	"item" : ItemCreator{},
-	"payment" : PaymentCreator{},
-	"order" : OrderCreator{},
-}
-
-func TryGetCreator(productName string, creators map[string]ICreator) (ICreator, error) {
-	if cr, exist := Creators[productName]; exist {
-		return cr, nil
-	}
-	return nil, errors.New("Creator doesn't exist")
-}
-
 type ICreator interface {
-	Create(id int) (IData)
+	Create(id int) IData
 }
 
 type OrderCreator struct {
@@ -55,18 +41,18 @@ func (pc PaymentCreator) Create(id int) IData {
 	rand.Seed(time.Now().UnixNano())
 	return Payment{
 		Transaction:  transactions[rand.Intn(len(transactions))],
-		Currency:     currencys[rand.Intn(len(currencys))],
+		Currency:     currencies[rand.Intn(len(currencies))],
 		Provider:     providers[rand.Intn(len(providers))],
 		Amount:       rand.Intn(5),
 		PaymentDt:    rand.Intn(5),
 		Bank:         banks[rand.Intn(len(banks))],
 		DeliveryCost: randInt(minPrice, maxPrice),
 		GoodsTotal:   randInt(0,10),
-		PaymentID: id,
+		PaymentID:    id,
 	}
 }
 
-func (oc OrderCreator) Create(id int) (IData) {
+func (oc OrderCreator) Create(id int) IData {
 	rand.Seed(time.Now().UnixNano())
 	pc := PaymentCreator{}
 	ic := ItemCreator{}
@@ -85,9 +71,10 @@ func (oc OrderCreator) Create(id int) (IData) {
 		SmID:              rand.Intn(5),
 		PaymentID: id,
 	}
-	itemsAmount := rand.Intn(5)
+	itemsAmount := randInt(1, 5)
 	for i := 0; i < itemsAmount; i++ {
 		o.Items = append(o.Items, ic.Create(id).(Item))
+		o.Items[i].ChrtID = o.OrderUID
 	}
 	o.Payment.Amount = itemsAmount
 	return o
@@ -121,7 +108,7 @@ var providers = [...]string{
 	"BirPay",
 }
 
-var currencys = [...]string {
+var currencies = [...]string {
 	"RUB",
 	"EUR",
 	"AUD",

@@ -1,9 +1,7 @@
 package dataFactory
 
-import (
-	"database/sql/driver"
-	"fmt"
-)
+type IData interface {
+}
 
 type OutputOrder struct {
 	OrderUID string `json:"order_uid"`
@@ -14,30 +12,24 @@ type OutputOrder struct {
 	DeliveryService string `json:"delivery_service"`
 }
 
-type IData interface {
-}
-
 type Order struct {
+	IData
 	OrderUID string `json:"order_uid" db:"orderuid"`
 	Entry string `json:"entry" db:"entry"`
 	InternalSignature string `json:"internal_signature" db:"internalsignature"`
 	Payment Payment `json:"payment" db:"payment"`
-	Items []Item `json:"dataFactory" db:"dataFactory"`
+	Items []Item `json:"items" db:"items"`
 	Locale string `json:"locale" db:"locale"`
 	CustomerID string `json:"customer_id" db:"customerid"`
 	TrackNumber string `json:"track_number" db:"tracknumber"`
 	DeliveryService string `json:"delivery_service" db:"deliveryservice"`
 	Shardkey string `json:"shardkey" db:"shardkey"`
 	SmID int `json:"sm_id" db:"smid"`
-	PaymentID int `json:"Payment_id" db:"PaymentID"`
-	IData
+	PaymentID int `json:"Payment_id" db:"paymentid"`
 }
-
-
 
 type Payment struct {
 	IData
-	driver.Valuer
 	Transaction string `json:"transaction" db:"transaction"`
 	Currency string `json:"currency" db:"currency"`
 	Provider string `json:"provider" db:"provider"`
@@ -48,21 +40,9 @@ type Payment struct {
 	GoodsTotal int `json:"goods_total" db:"goodstotal"`
 	PaymentID int `db:"PaymentID"`
 }
-func (p Payment) Value() (driver.Value, error) {
-	return fmt.Sprintf("(%s, %s, %s, %d, %d, %s, %d, %d)",
-		p.Transaction,
-		p.Currency,
-		p.Provider,
-		p.Amount,
-		p.PaymentDt,
-		p.Bank,
-		p.DeliveryCost,
-		p.GoodsTotal), nil
-}
 
 type Item struct {
 	IData
-	driver.Valuer
 	ChrtID string `json:"chrt_id" db:"chrtid"`
 	Price int `json:"price" db:"price"`
 	Rid string `json:"rid" db:"rid"`
@@ -74,17 +54,3 @@ type Item struct {
 	Brand string `json:"brand" db:"brand"`
 	ItemID int `db:"ItemID"`
 }
-
-func (i Item) Value() (driver.Value, error) {
-	return fmt.Sprintf("(%d, %d, %s, %s, %d, %s, %d, %d, %s)",
-		i.ChrtID,
-		i.Price,
-		i.Rid,
-		i.Name,
-		i.Sale,
-		i.Size,
-		i.TotalPrice,
-		i.NmID,
-		i.Brand), nil
-}
-

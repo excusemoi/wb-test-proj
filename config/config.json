@@ -1,0 +1,8 @@
+{
+  "PgUrl": "localhost:5432",
+  "PgPort": "5432",
+  "PgHostName": "localhost",
+  "PgDb": "testDb",
+  "PgUser": "postgres",
+  "PgPassword": "postgres"
+}

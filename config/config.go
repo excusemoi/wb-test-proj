@@ -11,12 +11,12 @@ import (
 
 // Config is a config :)
 type Config struct {
-	PgURL                string `env:"PG_URL"`
-	PgProto              string `env:"PG_PROTO"`
-	PgAddr               string `env:"PG_ADDR"`
-	PgDb                 string `env:"PG_DB"`
-	PgUser               string `env:"PG_USER"`
-	PgPassword           string `env:"PG_PASSWORD"`
+	PgUrl					string `env:"PG_URL"`
+	PgPort                	string `env:"PG_PORT"`
+	PgHostName				string `env:"PG_HOSTNAME"`
+	PgDb                 	string `env:"PG_DB"`
+	PgUser              	string `env:"PG_USER"`
+	PgPassword           	string `env:"PG_PASSWORD"`
 }
 
 var (
@@ -25,16 +25,16 @@ var (
 )
 
 // Get reads config from environment
-func Get() *Config {
+func Get(path string) *Config {
 	once.Do(func() {
 		envType := os.Getenv("ENV")
 		if envType == "" {
 			envType = "dev"
 		}
-		if err := configor.New(&configor.Config{Environment: envType}).Load(&config, "config.json"); err != nil {
+		if err := configor.New(&configor.Config{Environment: envType}).Load(&config, path); err != nil {
 			log.Fatal(err)
 		}
-		configBytes, err := json.MarshalIndent(config, "", "  ")
+		configBytes, err := json.MarshalIndent(config, "", " \t")
 		if err != nil {
 			log.Fatal(err)
 		}
