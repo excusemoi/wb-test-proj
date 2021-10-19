@@ -1,8 +1,8 @@
 {
-  "PgUrl": "localhost:5432",
+  "PgUrl": "jdbc:postgresql://develop.wbx-world.vm.prod-3d.cloud.3data/postgres",
   "PgPort": "5432",
-  "PgHostName": "localhost",
-  "PgDb": "testDb",
+  "PgHostName": "develop.wbx-world.vm.prod-3d.cloud.3data",
+  "PgDb": "unzhakov_test_db",
   "PgUser": "postgres",
-  "PgPassword": "postgres"
+  "PgPassword": "trainee"
 }
