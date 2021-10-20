@@ -3,15 +3,14 @@ package main
 import (
 	"encoding/json"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/stan.go"
+	"goProj/config"
 	"goProj/dataFactory"
-	"goProj/natsImp"
 	"log"
 	"math/rand"
+	"strings"
+	"time"
 )
-
-type publisher struct {
-	ns *natsImp.Nats
-}
 
 func main() {
 	if err := run(); err != nil {
@@ -20,13 +19,21 @@ func main() {
 }
 
 func run() error {
-	ni, err := natsImp.InitNats()
+
+	cfg := config.Get("../../config/config.json")
+
+	clusterUrls := strings.Join(cfg.ClusterUrls, ", ")
+	sc, err := stan.Connect(cfg.ClusterId,
+		"id1",
+		stan.NatsURL(clusterUrls),
+		stan.NatsOptions(
+			nats.ReconnectWait(time.Second*4),
+			nats.Timeout(time.Second*4)),
+	)
+
 	if err != nil {
 		return err
 	}
-	pub := publisher{ns: ni}
-	pub.ns.Conn, err = nats.Connect(nats.DefaultURL, pub.ns.Options...)
-	defer pub.ns.Conn.Close()
 
 	ordersCreator := dataFactory.OrderCreator{}
 	order := ordersCreator.Create(rand.Intn(10000))
@@ -36,13 +43,9 @@ func run() error {
 		return err
 	}
 
-	err = pub.ns.Conn.Publish("order", message)
-	err = pub.ns.Conn.Flush()
+	err = sc.Publish(cfg.Subject, message)
 
-	if err = pub.ns.Conn.LastError(); err != nil {
-		return err
-	}  else {
-		log.Printf("Published random order\n")
-	}
+	log.Printf("Published random %s\n", cfg.Subject)
+
 	return nil
 }

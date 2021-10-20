@@ -1,43 +1,38 @@
-package main
+package subscriber
 
 import (
 	"encoding/json"
 	_ "github.com/lib/pq"
 	"github.com/nats-io/nats.go"
+	"github.com/nats-io/stan.go"
 	"goProj/config"
 	"goProj/dataFactory"
 	"goProj/db"
-	"goProj/natsImp"
 	"log"
-	"runtime"
+	"strings"
+	"time"
 )
 
-type subscriber struct {
-	ns *natsImp.Nats
-}
-
-func main() {
-	if err := run(); err != nil {
-		log.Fatal(err)
-	}
-	runtime.Goexit()
-}
-
-func run() error {
-	ni, err := natsImp.InitNats()
-	if err != nil {
-		return err
-	}
-	sub := subscriber{ns: ni}
-	sub.ns.Conn, err = nats.Connect(nats.DefaultURL, ni.Options...)
-
-	cfg := config.Get("../../config/config.json")
+func Run() error {
+	cfg := config.Get("config/config.json")
 	dbPg, err := db.Dial(cfg)
 	if err != nil {
 		return err
 	}
 
-	_, err = sub.ns.Conn.Subscribe("order", func(msg *nats.Msg) {
+	clusterUrls := strings.Join(cfg.ClusterUrls, ", ")
+	sc, err := stan.Connect(cfg.ClusterId,
+		"id2",
+		stan.NatsURL(clusterUrls),
+		stan.NatsOptions(
+			nats.ReconnectWait(time.Second*4),
+			nats.Timeout(time.Second*4)),)
+
+	if err != nil {
+		return err
+	}
+
+	_, err = sc.Subscribe(cfg.Subject, func(msg *stan.Msg) {
 		o := dataFactory.Order{}
 		err = json.Unmarshal(msg.Data, &o)
 		if err != nil {
@@ -59,14 +54,7 @@ func run() error {
 		}
 	})
 
-	err = sub.ns.Conn.Flush()
-
-	if err = sub.ns.Conn.LastError(); err != nil {
-		return err
-	}
-
-	log.Printf("Listening order")
+	log.Printf("Listening %s", cfg.Subject)
 
 	return nil
 }
-

@@ -4,5 +4,9 @@
   "PgHostName": "develop.wbx-world.vm.prod-3d.cloud.3data",
   "PgDb": "unzhakov_test_db",
   "PgUser": "postgres",
-  "PgPassword": "trainee"
+  "PgPassword": "trainee",
+  "ClusterId": "world-nats-stage",
+  "ClusterUrls": ["wbx-world-nats-stage.dp.wb.ru",
+    "wbx-world-nats-stage.dl.wb.ru"],
+  "Subject": "go.test"
 }

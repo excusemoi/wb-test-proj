@@ -11,7 +11,9 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	a.Run()
+	if err = a.Run(); err != nil {
+		return err
+	}
 	return nil
 }
 

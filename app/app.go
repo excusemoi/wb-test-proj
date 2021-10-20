@@ -19,8 +19,11 @@ func InitApp() (*app, error) {
 
 }
 
-func (a *app) Run() {
+func (a *app) Run() error {
 	if a.Server != nil {
-		a.Server.Run()
+		if err := a.Server.Run(); err != nil {
+			return err
+		}
 	}
+	return nil
 }

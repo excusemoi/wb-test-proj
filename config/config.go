@@ -17,6 +17,9 @@ type Config struct {
 	PgDb                 	string `env:"PG_DB"`
 	PgUser              	string `env:"PG_USER"`
 	PgPassword           	string `env:"PG_PASSWORD"`
+	ClusterId				string
+	ClusterUrls				[]string
+	Subject 				string
 }
 
 var (
