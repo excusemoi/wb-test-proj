@@ -44,9 +44,17 @@ func InitServer() (*Server, error){
 
 func (s *Server) Run() error {
 	fmt.Println("Listening on port :" + s.serverPort)
+
 	http.HandleFunc("/", s.HandleFunction)
 
-	err := subscriber.Run(s.pathToCfg)
+	err := s.TryToRestore()
+
+	if err != nil {
+		return err
+	}
+
+	err = subscriber.Run(s.pathToCfg)
+
 	if err != nil {
 		return err
 	}
@@ -164,4 +172,33 @@ func (s *Server) getOutputOrder(uid string) (*dataFactory.OutputOrder, error) {
 	s.cache.Store(uid, &outputOrder)
 
 	return &outputOrder, nil
+}
+
+func (s* Server) TryToRestore() (error) {
+
+	res, err := s.db.Query(fmt.Sprintf(`select o.orderuid from "Order" as o`))
+
+	var uid string
+
+	for res.Next() {
+		err = res.Scan(&uid)
+
+		if err != nil {
+			return err
+		}
+
+		outputOrder, err := s.getOutputOrder(uid)
+
+		if err != nil {
+			return err
+		}
+
+		s.cache.Restore(outputOrder)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

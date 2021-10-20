@@ -29,6 +29,6 @@ func (c* Cache) Store(key string, val interface{}) {
 	c.mutex.Unlock()
 }
 
-func (c* Cache) Restore(order dataFactory.OutputOrder) {
+func (c* Cache) Restore(order *dataFactory.OutputOrder) {
 	c.data[order.OrderUID] = order
 }
