@@ -21,7 +21,7 @@ type Server struct {
 }
 
 func InitServer() (*Server, error){
-	cfg := config.Get("../config/config.json")
+	cfg := config.Get("github.com/excusemoi/goProj/config/config.json")
 	pgDb, err := db.Dial(cfg)
 	if err != nil {
 		return nil, err
