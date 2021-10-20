@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/jmoiron/sqlx"
 	"goProj/cache"
@@ -11,6 +12,7 @@ import (
 	"goProj/natsImp/subscriber"
 	"log"
 	"net/http"
+	"os"
 )
 
 type Server struct {
@@ -18,10 +20,15 @@ type Server struct {
 	db 				*sqlx.DB
 	cache 			*cache.Cache
 	serverPort 		string
+	pathToCfg		string
 }
 
 func InitServer() (*Server, error){
-	cfg := config.Get("github.com/excusemoi/goProj/config/config.json")
+	if len(os.Args) < 2 {
+		return nil, errors.New("Please indicate the path to the config file")
+	}
+	pathToCfg := os.Args[1]
+	cfg := config.Get(pathToCfg)
 	pgDb, err := db.Dial(cfg)
 	if err != nil {
 		return nil, err
@@ -31,6 +38,7 @@ func InitServer() (*Server, error){
 		db:         pgDb,
 		cache:      cache.InitCache(),
 		serverPort: "3000",
+		pathToCfg:  pathToCfg,
 	}, nil
 }
 
@@ -38,12 +46,12 @@ func (s *Server) Run() error {
 	fmt.Println("Listening on port :" + s.serverPort)
 	http.HandleFunc("/", s.HandleFunction)
 
-	err := subscriber.Run()
+	err := subscriber.Run(s.pathToCfg)
 	if err != nil {
 		return err
 	}
 
-	if err := http.ListenAndServe(":" + s.serverPort, nil); err != nil{
+	if err = http.ListenAndServe(":" + s.serverPort, nil); err != nil{
 		return err
 	}
 

@@ -2,12 +2,14 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
 	"goProj/config"
 	"goProj/dataFactory"
 	"log"
 	"math/rand"
+	"os"
 	"strings"
 	"time"
 )
@@ -20,7 +22,11 @@ func main() {
 
 func run() error {
 
-	cfg := config.Get("../../config/config.json")
+	if len(os.Args) < 2 {
+		return errors.New("Please indicate the path to the config file")
+	}
+
+	cfg := config.Get(os.Args[1])
 
 	clusterUrls := strings.Join(cfg.ClusterUrls, ", ")
 	sc, err := stan.Connect(cfg.ClusterId,

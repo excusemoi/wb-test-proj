@@ -2,6 +2,7 @@ package subscriber
 
 import (
 	"encoding/json"
+	"errors"
 	_ "github.com/lib/pq"
 	"github.com/nats-io/nats.go"
 	"github.com/nats-io/stan.go"
@@ -9,12 +10,17 @@ import (
 	"goProj/dataFactory"
 	"goProj/db"
 	"log"
+	"os"
 	"strings"
 	"time"
 )
 
-func Run() error {
-	cfg := config.Get("config/config.json")
+func Run(pathToCfg string) error {
+	if len(os.Args) < 2 {
+		return errors.New("Please indicate the path to the config file")
+	}
+
+	cfg := config.Get(pathToCfg)
 	dbPg, err := db.Dial(cfg)
 	if err != nil {
 		return err
