@@ -1,6 +1,6 @@
 console.log("JS Loaded")
 
-const url = "127.0.0.1:3000"
+const url = "127.0.0.1:8080"
 
 function parseOutputOrderJson(outputOrder) {
     col = []
@@ -14,7 +14,7 @@ var inputForm = document.getElementById("inputForm")
 inputForm.addEventListener("submit", (e)=>{
     e.preventDefault()
     const formdata = new FormData(inputForm)
-    fetch(url,{
+    fetch(document.documentURI,{
         method:"POST",
         body:formdata,
     }).then(

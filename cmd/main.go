@@ -1,9 +1,11 @@
 package main
 
 import (
+	"fmt"
 	_ "github.com/lib/pq"
 	"goProj/app"
 	"log"
+	"os"
 )
 
 func run() error {
@@ -18,6 +20,7 @@ func run() error {
 }
 
 func main() {
+	fmt.Println(os.Getwd())
 	if err := run(); err != nil {
 		log.Fatal(err)
 	}

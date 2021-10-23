@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,76 +14,128 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 type Server struct {
 	cfg 			*config.Config
 	db 				*sqlx.DB
 	cache 			*cache.Cache
+	srv             *http.Server
 	serverPort 		string
 	pathToCfg		string
 }
 
-func InitServer() (*Server, error){
+func InitServer() (s *Server, e error){
 	if len(os.Args) < 2 {
 		return nil, errors.New("Please indicate the path to the config file")
 	}
+
 	pathToCfg := os.Args[1]
 	cfg := config.Get(pathToCfg)
 	pgDb, err := db.Dial(cfg)
+
 	if err != nil {
 		return nil, err
 	}
-	return &Server{
+
+	s = &Server{
 		cfg:        cfg,
 		db:         pgDb,
 		cache:      cache.InitCache(),
-		serverPort: "3000",
-		pathToCfg:  pathToCfg,
-	}, nil
+		srv:        nil,
+		serverPort: "8080",
+		pathToCfg:  os.Args[1],
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/", http.HandlerFunc(
+		func(writer http.ResponseWriter, request *http.Request) {
+			switch request.Method {
+			case "GET":
+				get(writer, request)
+			case "POST":
+				if err := s.post(writer, request); err != nil {
+					log.Println(err)
+				}
+			}
+		},
+		))
+
+	s.srv = &http.Server{
+		Addr: ":" + s.serverPort,
+		Handler: mux,
+	}
+
+	return s, nil
 }
 
-func (s *Server) Run() error {
-	fmt.Println("Listening on port :" + s.serverPort)
+func (s *Server) Run() (err error) {
 
-	http.HandleFunc("/", s.HandleFunction)
-
-	err := s.TryToRestore()
-
+	err = s.TryToRestore()
 	if err != nil {
 		return err
 	}
 
 	err = subscriber.Run(s.pathToCfg)
-
 	if err != nil {
 		return err
 	}
 
-	if err = http.ListenAndServe(":" + s.serverPort, nil); err != nil{
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGINT, syscall.SIGTERM)
+
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		osCall := <-c
+		log.Printf("System call:%+v", osCall)
+		cancel()
+	}()
+
+	if err = s.serve(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *Server) HandleFunction(writer http.ResponseWriter, request *http.Request){
-	switch request.Method {
-	case "GET":
-		s.get(writer, request)
-	case "POST":
-		if err := s.post(writer, request); err != nil {
-			log.Println(err)
+func (s *Server) serve(ctx context.Context) (err error) {
+	go func() {
+		if err = s.srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatal(err)
 		}
-	default:
-		log.Fatal("Request type other than GET or Post not supported\n")
+	}()
+
+	log.Printf("Server started")
+
+	<-ctx.Done()
+
+	log.Printf("Server stopped")
+
+	ctxShutDown, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer func() {
+		cancel()
+	}()
+
+	if err = s.srv.Shutdown(ctxShutDown); err != nil {
+		return err
 	}
+
+	log.Printf("Server exited properly")
+
+	if err == http.ErrServerClosed {
+		err = nil
+	}
+	return nil
 }
 
-func (*Server) get(writer http.ResponseWriter, request *http.Request){
+func get(writer http.ResponseWriter, request *http.Request){
 	path := request.URL.Path
 	if path == "/" {
-		path = "./static/main.html"
+		path = "./cmd/static/main.html"
 	} else {
 		path = "." + path
 	}
