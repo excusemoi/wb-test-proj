@@ -1,12 +1,11 @@
 {
-  "PgUrl": "jdbc:postgresql://develop.wbx-world.vm.prod-3d.cloud.3data/postgres",
+  "PgUrl": "",
   "PgPort": "5432",
-  "PgHostName": "develop.wbx-world.vm.prod-3d.cloud.3data",
+  "PgHostName": "",
   "PgDb": "unzhakov_test_db",
   "PgUser": "postgres",
-  "PgPassword": "trainee",
-  "ClusterId": "world-nats-stage",
-  "ClusterUrls": ["wbx-world-nats-stage.dp.wb.ru",
-    "wbx-world-nats-stage.dl.wb.ru"],
+  "PgPassword": "",
+  "ClusterId": "",
+  "ClusterUrls": [],
   "Subject": "go.test"
 }
